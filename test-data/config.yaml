@@ -1,0 +1,17 @@
+applications:
+  - name: CPQ
+    prefix: cpq
+    path: /cpq
+    spec: test-data/link-example.yaml
+  - name: Canada Machine Learning
+    prefix: cml
+    path: /canada-ml
+    spec: test-data/api-with-examples.json
+  - name: Canada Supplier Expediting
+    prefix: cse
+    path: /canada-supplier-expediting
+    spec: test-data/petstore.json
+  - name: Test
+    prefix: test
+    path: /test
+    spec: test-data/openapi.yaml
