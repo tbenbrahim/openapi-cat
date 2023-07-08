@@ -83,20 +83,22 @@ fn main() {
 fn success_exit(output: &str, quiet: bool) {
     if !quiet {
         let destination = match output {
-            "-" => "stdout".to_string(),
+            "-" => None,
             _ => {
                 let canon_result = PathBuf::from(output).canonicalize();
-                match canon_result {
+                Some(match canon_result {
                     Ok(path) => path.into_os_string().into_string().unwrap(),
                     _ => output.to_string(),
-                }
+                })
             }
         };
-        println!(
-            "{}: The merged OpenAPI specification was written to {}.",
-            "Success".green(),
-            destination
-        );
+        if let Some(destination) = destination {
+            println!(
+                "{}: The merged OpenAPI specification was written to {}.",
+                "Success".green(),
+                destination
+            );
+        }
     }
     exit(0);
 }
@@ -104,7 +106,7 @@ fn success_exit(output: &str, quiet: bool) {
 fn error_exit(message: String, quiet: bool) {
     if !quiet {
         let error = format!("{}: {}", "Error".red(), message);
-        println!("{}", error);
+        eprintln!("{}", error);
     }
     exit(1);
 }
