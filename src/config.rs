@@ -18,11 +18,26 @@ pub mod config {
     }
 
     impl Config {
-        pub fn read_from(file_path: &str) -> Config {
-            let contents =
-                fs::read_to_string(file_path).expect("Should have been able to read the file");
-            serde_yaml::from_str(contents.as_str())
-                .expect(&format!("Could not deserialize file {}", file_path))
+        pub fn read_from(file_path: &str) -> Result<Config, String> {
+            let contents = match fs::read_to_string(file_path) {
+                Ok(contents) => contents,
+                Err(e) => {
+                    return Err(format!(
+                        "Could not read configuration file {}: {}",
+                        file_path,
+                        e.to_string()
+                    ));
+                }
+            };
+            let result = serde_yaml::from_str(contents.as_str());
+            if let Err(e) = result {
+                return Err(format!(
+                    "Could not deserialize configuration file {} as valid YAML: {}",
+                    file_path,
+                    e.to_string()
+                ));
+            }
+            Ok(result.unwrap())
         }
         pub fn validate(&self) -> Result<(), String> {
             let mut result = Ok(());

@@ -83,41 +83,67 @@ pub mod openapi_joiner {
             self.adjust_tags_definition(input.tags, prefix);
         }
 
-        pub fn write_to(&self, filepath: &str) {
-            if filepath == "-" {
-                self.write_to_stdout();
+        pub fn write_to(&self, filepath: &str) -> Result<(), String> {
+            return if filepath == "-" {
+                self.write_to_stdout()
             } else {
-                self.write_to_file(filepath);
+                self.write_to_file(filepath)
             }
         }
 
-        pub fn write_to_stdout(&self) {
-            serde_json::to_writer(std::io::stdout(), &self.joined)
-                .expect("Could not write to stdout");
-            println!()
+        pub fn write_to_stdout(&self) -> Result<(), String> {
+            let result = serde_json::to_writer(std::io::stdout(), &self.joined);
+            if let Err(e) = result {
+                return Err(format!("Could not write to stdout: {}", e));
+            }
+            println!();
+            Ok(())
         }
 
-        pub fn write_to_file(&self, filepath: &str) {
+        pub fn write_to_file(&self, filepath: &str) -> Result<(), String> {
             let extension = PathBuf::from(filepath)
                 .extension()
                 .and_then(OsStr::to_str)
                 .and_then(|ext| Some(ext.to_lowercase()));
             match extension {
                 Some(ext) => match ext.as_str() {
-                    "yaml" => serde_yaml::to_writer(
-                        std::fs::File::create(filepath).expect("Could not create file"),
-                        &self.joined,
-                    )
-                    .expect("Could not write to file"),
-                    "json" => serde_json::to_writer(
-                        std::fs::File::create(filepath).expect("Could not create file"),
-                        &self.joined,
-                    )
-                    .expect("Could not write to file"),
-                    _ => panic!("Unsupported file extension {}", ext),
+                    "yaml" => {
+                        let destination = std::fs::File::create(filepath);
+                        if let Err(e) = destination {
+                            return Err(format!("Could not create file: {}", e));
+                        }
+                        let result = serde_yaml::to_writer(destination.unwrap(), &self.joined);
+                        if let Err(e) = result {
+                            return Err(format!("Could not write to file: {}", e));
+                        }
+                    }
+
+                    "json" => {
+                        let destination = std::fs::File::create(filepath);
+                        if let Err(e) = destination {
+                            return Err(format!("Could not create file: {}", e));
+                        }
+                        let result = serde_json::to_writer(destination.unwrap(), &self.joined);
+                        if let Err(e) = result {
+                            return Err(format!("Could not write to file: {}", e));
+                        }
+                    }
+                    _ => {
+                        return Err(format!(
+                            "Unsupported file extension \"{}\" for input spec: {}",
+                            ext,
+                            filepath
+                        ));
+                    }
                 },
-                None => panic!("Could not determine file extension"),
+                None => {
+                    return Err(format!(
+                        "Unsupported file extension for input spec: {}",
+                        filepath
+                    ));
+                }
             }
+            Ok(())
         }
         fn adjust_path_item_ref(
             &mut self,

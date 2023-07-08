@@ -50,27 +50,33 @@ fn main() {
     }
 
     if let Some(config_file) = args.get_one::<String>("config") {
-        let config = Config::read_from(config_file.as_str());
-        let validation_result = config.validate();
-        if validation_result.is_err() {
-            error_exit(
-                format!(
-                    "Invalid configuration: {}",
-                    validation_result.err().unwrap()
-                ),
-                quiet,
-            );
+        match Config::read_from(config_file.as_str()) {
+            Ok(config) => match config.validate() {
+                Ok(_) => {
+                    let mut openapi_joiner = OpenAPIJoiner::new();
+                    config.applications.iter().for_each(|application| {
+                        match read_specification(application.spec.as_str()) {
+                            Ok(spec) => openapi_joiner.add(
+                                spec,
+                                application.path.as_str(),
+                                application.prefix.as_str(),
+                            ),
+                            Err(e) => error_exit(e, quiet),
+                        }
+                    });
+                    let output = args.get_one::<String>("output").unwrap();
+                    match openapi_joiner.write_to(output.as_str()) {
+                        Ok(_) => success_exit(output, quiet),
+                        Err(e) => error_exit(
+                            format!("Unable to write output file {}: {}", output, e),
+                            quiet,
+                        ),
+                    }
+                }
+                Err(e) => error_exit(e, quiet),
+            },
+            Err(e) => error_exit(e, quiet),
         }
-        let mut openapi_joiner = OpenAPIJoiner::new();
-        config.applications.into_iter().for_each(|application| {
-            let specification = read_specification(application.spec.as_str());
-            if let Some(spec) = specification {
-                openapi_joiner.add(spec, application.path.as_str(), application.prefix.as_str());
-            }
-        });
-        let output = args.get_one::<String>("output").unwrap();
-        openapi_joiner.write_to(output.as_str());
-        success_exit(output, quiet);
     }
 }
 
@@ -103,21 +109,27 @@ fn error_exit(message: String, quiet: bool) {
     exit(1);
 }
 
-fn read_specification(path: &str) -> Option<OpenAPI> {
-    let extension = PathBuf::from(path)
-        .extension()
-        .and_then(OsStr::to_str)?
-        .to_lowercase();
-    let contents = fs::read_to_string(path).expect("Should have been able to read the file");
+fn read_specification(path: &str) -> Result<OpenAPI, String> {
+    let extension = match PathBuf::from(path).extension().and_then(OsStr::to_str) {
+        None => return Err(format!("Unable to determine file type of {}", path)),
+        Some(extension) => extension.to_lowercase(),
+    };
+    let contents = match fs::read_to_string(path) {
+        Ok(contents) => contents,
+        Err(e) => return Err(format!("Unable to read file {}: {}", path, e)),
+    };
     return match extension.as_str() {
-        "yaml" => Some(
-            serde_yaml::from_str(contents.as_str())
-                .expect(&format!("Could not deserialize file {}", path)),
-        ),
-        "json" => Some(
-            serde_json::from_str(contents.as_str())
-                .expect(&format!("Could not deserialize file {}", path)),
-        ),
-        _ => None,
+        "yaml" => match serde_yaml::from_str(contents.as_str()) {
+            Ok(spec) => Ok(spec),
+            Err(e) => Err(format!("Could not deserialize file {}: {}", path, e)),
+        },
+        "json" => match serde_json::from_str(contents.as_str()) {
+            Ok(spec) => Ok(spec),
+            Err(e) => Err(format!("Could not deserialize file {}: {}", path, e)),
+        },
+        _ => Err(format!(
+            "Unsupported file type {} for file {}",
+            extension, path
+        )),
     };
 }
