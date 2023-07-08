@@ -31,10 +31,10 @@ jobs:
         include:
           - os: ubuntu-latest
             release_suffix: linux
-            release_extension: ""
+            release_extension: "-linux"
           - os: macos-latest
             release_suffix: mac
-            release_extension: ""
+            release_extension: "-mac"
           - os: windows-latest
             release_suffix: win
             release_extension: ".exe"
@@ -44,10 +44,10 @@ jobs:
         uses: actions/checkout@v2
       - name: Run Linux Build
         if: matrix.os == 'ubuntu-latest'
-        run: cargo build --release && mkdir -p target/release/linux && cp target/release/openapi-cat target/release/linux/openapi-cat
+        run: cargo build --release && mkdir -p target/release/linux && cp target/release/openapi-cat target/release/linux/openapi-cat-linux
       - name: Run Mac Build
         if: matrix.os == 'macos-latest'
-        run: cargo build --release && mkdir -p target/release/mac && cp target/release/openapi-cat target/release/mac/openapi-cat
+        run: cargo build --release && mkdir -p target/release/mac && cp target/release/openapi-cat target/release/mac/openapi-cat-mac
       - name: Run Windows Build
         if: matrix.os == 'windows-latest'
         run: cargo build --release && mkdir -p target/release/win && cp target/release/openapi-cat.exe target/release/win/openapi-cat.exe
