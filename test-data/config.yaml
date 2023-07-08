@@ -1,17 +1,17 @@
 applications:
-  - name: CPQ
-    prefix: cpq
-    path: /cpq
+  - name: Customer API
+    prefix: cust
+    path: /customers
     spec: test-data/link-example.yaml
-  - name: Canada Machine Learning
-    prefix: cml
-    path: /canada-ml
+  - name: Products API
+    prefix: prod
+    path: /products
     spec: test-data/api-with-examples.json
-  - name: Canada Supplier Expediting
-    prefix: cse
-    path: /canada-supplier-expediting
+  - name: Marketing API
+    prefix: mrk
+    path: /marketing
     spec: test-data/petstore.json
-  - name: Test
-    prefix: test
-    path: /test
+  - name: Sales API
+    prefix: sales
+    path: /sales
     spec: test-data/openapi.yaml

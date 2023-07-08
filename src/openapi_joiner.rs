@@ -307,7 +307,7 @@ pub mod openapi_joiner {
                 ReferenceOr::Item(response) => {
                     let new_response = Response {
                         description: response.description,
-                        headers: response.headers, //fixme
+                        headers: self.adjust_headers(&response.headers, prefix),
                         content: self.adjust_content(&response.content, prefix),
                         links: self.adjust_reference_in_map(&response.links, prefix),
                         extensions: self.adjust_key_in_map(&response.extensions, prefix),
